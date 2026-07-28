@@ -5,5 +5,6 @@ This repository documents my personal journey learning Rust `no_std` on ESP32, f
 
 C语言嵌入式开发者的个人Rust-no_std开发学习记录。
 
-开发环境为：VS code
-硬件平台为：ESP32S3
+开发环境：VS code
+
+硬件平台：ESP32S3
