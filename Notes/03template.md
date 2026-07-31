@@ -96,7 +96,7 @@ fn main() -> ! {    // ！表示这个函数永远不会返回
     loop {
         // 使用 log crate 的 info! 宏打印日志信息，非标准库情况下无法使用 println!    
         info!("Hello world!");
-        
+
         // 获取此刻时间值给 delay_start 
         let delay_start = Instant::now();
         // elapsed() 返回从 delay_start 到现在的时间间隔，Duration::from_millis(500) 创建一个500毫秒的时间间隔对象。
@@ -165,15 +165,13 @@ fn main() -> ! {
 
 ## 日志打印
 
-`log`是rust的日志接口，非标准库下无法使用`println!`。
+`log`crate是rust社区中广泛使用的日志工具之一。
 
-源码中ESP初始化日志系统并让ESP的logger成为`log`日志系统的后端，这样使用`info!`打印宏等日志消息都会通过ESP的logger进行输出（通常是输出到串口）。
+源码中`esp_println`提供了日志工具的具体实现，初始化了日志系统并让ESP的logger成为`log`日志系统的后端，这样使用`info!`打印宏等日志消息都会通过ESP的logger进行输出（通常是输出到串口）。
 
 ```rust
 use log::info;
-    
+
 // 初始化 log 日志系统为 esp_println::logger 
 esp_println::logger::init_logger_from_env();
 ```
-
-
