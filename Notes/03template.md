@@ -109,6 +109,22 @@ fn main() -> ! {    // ！表示这个函数永远不会返回
 
 # 烧录运行
 
+使用下列命令进行编译：
+
+```powershell
+cargo build 
+```
+
+使用下列命令进行烧录运行：
+
+```powershell
+cargo espflash flash --monitor
+```
+
+`--monitor`在烧录完成后自动打开串口监视器查看日志输出。
+
+**预期运行效果：**
+
 # 代码讲解
 
 ## 属性
