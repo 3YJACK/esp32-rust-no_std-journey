@@ -1,11 +1,11 @@
 [package]
 edition      = "2024"
-name         = "03template"
+name         = "template"
 rust-version = "1.88"
 version      = "0.1.0"
 
 [[bin]]
-name = "03template"
+name = "template"
 path = "./src/bin/main.rs"
 
 [dependencies]
