@@ -64,6 +64,11 @@ fn main() -> ! {
     let mut led = Output::new(peripherals.GPIO2, Level::Low, OutputConfig::default());
     let delay = esp_hal::delay::Delay::new();
 
+    // let config = OutputConfig::default()
+    //     .with_drive_mode(DriveMode::PushPull)
+    //     .with_pull(Pull::None);
+    // let mut led = Output::new(peripherals.GPIO2, Level::Low, config);
+
     // led blink
     led.set_high();
     delay.delay_ms(1000);
