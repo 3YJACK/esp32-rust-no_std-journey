@@ -1,11 +1,11 @@
 [package]
 edition      = "2024"
-name         = "template"
+name         = "esp32-gpio-blink"
 rust-version = "1.88"
 version      = "0.1.0"
 
 [[bin]]
-name = "template"
+name = "esp32-gpio-blink"
 path = "./src/bin/main.rs"
 
 [dependencies]
