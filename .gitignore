@@ -1,0 +1,28 @@
+# Rust build artifacts
+/target/
+**/target/
+
+# Cargo lockfile
+# Ignore it here to avoid extra noise from local dependency resolution.
+Cargo.lock
+
+# Editor / OS temporary files
+.vscode/
+.vscode/settings.json
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+
+# Backup / compiled outputs
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Logs
+*.log
