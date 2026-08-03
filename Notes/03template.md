@@ -123,7 +123,72 @@ cargo espflash flash --monitor
 
 `--monitor`在烧录完成后自动打开串口监视器查看日志输出。
 
-**预期运行效果：**
+**预期效果：**
+
+执行编译命令后看到以下日志输出信息则为编译成功：
+
+```powershellp
+Finished `dev` profile [optimized + debuginfo] target(s) in 1m 32s 
+```
+
+执行烧录命令应能看到以下日志信息：
+
+```
+Chip type:         esp32s3 (revision v0.2)
+Crystal frequency: 40 MHz
+Flash size:        16MB
+Features:          WiFi, BLE, Embedded Flash
+MAC address:       ac:a7:04:ee:14:b0
+App/part. size:    107,744/16,384,000 bytes, 0.66%
+[00:00:00] [========================================]       1/1       0x0      Verifying... OK!                                                                                 
+[00:00:00] [========================================]       1/1       0x8000   Verifying... OK!                                                                                 
+[00:00:01] [========================================]       3/3       0x10000  Verifying... OK!                                                                                 [2026-08-03T15:03:44Z INFO ] Flashing has completed!
+Commands:
+    CTRL+R    Reset chip
+    CTRL+C    Exit
+
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x15 (USB_UART_CHIP_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x40378eb1
+SPIWP:0xee
+mode:DIO, clock div:2
+load:0x3fce2820,len:0x158c
+load:0x403c8700,len:0xd24
+load:0x403cb700,len:0x2f34
+entry 0x403c8924
+I (27) boot: ESP-IDF v5.5.1-838-gd66ebb86d2e 2nd stage bootloader
+I (27) boot: compile time Nov 26 2025 12:27:56
+I (27) boot: Multicore bootloader
+I (29) boot: chip revision: v0.2
+I (31) boot: efuse block revision: v1.3
+I (35) boot.esp32s3: Boot SPI Speed : 40MHz
+I (39) boot.esp32s3: SPI Mode       : DIO
+I (43) boot.esp32s3: SPI Flash Size : 16MB
+I (47) boot: Enabling RNG early entropy source...
+I (51) boot: Partition Table:
+I (54) boot: ## Label            Usage          Type ST Offset   Length
+I (60) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (66) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (73) boot:  2 factory          factory app      00 00 00010000 00fa0000
+I (80) boot: End of partition table
+I (83) esp_image: segment 0: paddr=00010020 vaddr=3c000020 size=07ff4h ( 32756) map
+I (98) esp_image: segment 1: paddr=0001801c vaddr=3fc896bc size=00a88h (  2696) load
+I (99) esp_image: segment 2: paddr=00018aac vaddr=40378000 size=016bch (  5820) load
+I (107) esp_image: segment 3: paddr=0001a170 vaddr=00000000 size=05ea8h ( 24232) 
+I (118) esp_image: segment 4: paddr=00020020 vaddr=42010020 size=0a490h ( 42128) map
+I (131) boot: Loaded app from partition at offset 0x10000
+I (131) boot: Disabling RNG early entropy source...
+INFO - Hello world!
+INFO - Hello world!
+INFO - Hello world!
+INFO - Hello world!
+INFO - Hello world!
+INFO - Hello world!
+INFO - Hello world!
+```
+
+可以看到 Hello world! 信息正常打印，模板程序运行成功！
 
 # 代码讲解
 
@@ -164,7 +229,7 @@ cargo espflash flash --monitor
 而在`mian`函数前面，又使用了外部属性，也就是仅作用于`main`函数的局部允许使用大型栈数据，不会触发编译器警告。原因在代码中也给出：
 
 > it's not unusual to allocate larger buffers etc. in main
-> 
+>
 > 在 main 函数里分配较大的缓冲区是很常见的。
 
 ```rust
