@@ -11,6 +11,7 @@ use esp_hal::{
     clock::CpuClock,
     main,
     time::{Duration, Instant},
+    gpio::*,   // 导入gpio模块里所有的公开类型和函数
 };
 
 use log::info;
@@ -38,12 +39,12 @@ fn main() -> ! {
     let peripherals = esp_hal::init(config);
 
     // The following pins are used to bootstrap the chip. They are available
-                    // for use, but check the datasheet of the module for more information on them.
-                    // - GPIO0
-                    // - GPIO3
-                    // - GPIO45
-                    // - GPIO46
-                    // These GPIO pins are in use by some feature of the module and should not be used.
+    // for use, but check the datasheet of the module for more information on them.
+    // - GPIO0
+    // - GPIO3
+    // - GPIO45
+    // - GPIO46
+    // These GPIO pins are in use by some feature of the module and should not be used.
     let _ = peripherals.GPIO27;
     let _ = peripherals.GPIO28;
     let _ = peripherals.GPIO29;
@@ -58,8 +59,19 @@ fn main() -> ! {
 
     esp_alloc::heap_allocator!(#[esp_hal::ram(reclaimed)] size: 73744);
 
+    // led initialization 
+    let mut led = Output::new(peripherals.GPIO2, Level::Low, OutputConfig::default());
+    let delay = esp_hal::delay::Delay::new();
+
+    led.set_high();
+    delay.delay_ms(1000);
+
+    led.set_low();
+    delay.delay_ms(1000);
+    
     loop {
-        
+       led.toggle();
+       delay.delay_ms(1000);
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
