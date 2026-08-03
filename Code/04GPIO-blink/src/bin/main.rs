@@ -36,6 +36,7 @@ fn main() -> ! {
     esp_println::logger::init_logger_from_env();
 
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
+    // 外设统一初始化
     let peripherals = esp_hal::init(config);
 
     // The following pins are used to bootstrap the chip. They are available
