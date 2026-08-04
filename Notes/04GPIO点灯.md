@@ -78,6 +78,7 @@ fn main() -> ! {
 
     loop {
        led.toggle();
+       info!("led level: {:?}", led.output_level());
        delay.delay_ms(1000);
     }
 
@@ -101,7 +102,15 @@ cargo espflash flash --monitor
 
 **预期效果：**
 
+在编译及烧录成功之后，目标引脚输出高低电平方波，日志输出信息应该如下所示，若连接LED灯，则LED灯应进行周期性闪烁。
 
+```
+INFO - led level: Low
+INFO - led level: High
+INFO - led level: Low
+INFO - led level: High
+.......
+```
 
 # 代码讲解
 
