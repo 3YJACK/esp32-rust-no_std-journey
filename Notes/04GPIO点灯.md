@@ -99,7 +99,7 @@ cargo build
 cargo espflash flash --monitor
 ```
 
-**预期运行效果：**
+**预期效果：**
 
 
 
@@ -145,5 +145,3 @@ let mut led = Output::new(peripherals.GPIO2, Level::Low, config);
 然后就可以调用输出模式的相关驱动函数，详情可见官方文档[Output in esp_hal::gpio - Rust](https://docs.espressif.com/projects/rust/esp-hal/1.1.0/esp32s3/esp_hal/gpio/struct.Output.html)。
 
 ## Delay
-
-
