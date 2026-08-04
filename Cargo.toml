@@ -2,6 +2,7 @@
 members = [
   "Code/03template",
   "Code/04GPIO-blink",
+  "Code/05uart"
 ]
 resolver = "3"
 
