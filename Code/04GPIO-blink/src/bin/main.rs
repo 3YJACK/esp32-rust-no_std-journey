@@ -71,14 +71,14 @@ fn main() -> ! {
 
     // led blink
     led.set_high();
-    delay.delay_ms(1000);
+    delay.delay_millis(1000);
 
     led.set_low();
-    delay.delay_ms(1000);
+    delay.delay_millis(1000);
 
     loop {
        led.toggle();
-       delay.delay_ms(1000);
+       delay.delay_millis(1000);
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
