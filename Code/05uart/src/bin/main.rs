@@ -11,6 +11,7 @@ use esp_hal::{
     clock::CpuClock,
     main,
     time::{Duration, Instant},
+    uart::*,
 };
 
 use log::info;
@@ -59,9 +60,26 @@ fn main() -> ! {
 
     esp_alloc::heap_allocator!(#[esp_hal::ram(reclaimed)] size: 73744);
 
+    // uart initialization
+    let uart_config = Config::default()
+        .with_baudrate(115200)
+        .with_data_bits(DataBits::_8)
+        .with_parity(Parity::None)
+        .with_stop_bits(StopBits::_1);
+
+    let mut uart = Uart::new(peripherals.UART1, uart_config)
+        .expect("Failed to initialize UART")    //
+        .with_tx(peripherals.GPIO43)
+        .with_rx(peripherals.GPIO44);   
+
+    let message = b"Hello, UART!\n";
+    
+    // delay initialization
+    let delay = esp_hal::delay::Delay::new();
 
     loop {
-
+        uart.write(message);
+        delay.delay_millis(1000);
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
