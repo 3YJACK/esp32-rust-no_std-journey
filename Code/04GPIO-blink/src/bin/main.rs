@@ -78,6 +78,7 @@ fn main() -> ! {
 
     loop {
        led.toggle();
+       info!("led level: {:?}", led.output_level());
        delay.delay_millis(1000);
     }
 
