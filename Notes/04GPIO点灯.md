@@ -116,13 +116,13 @@ INFO - led level: High
 
 ## GPIO
 
-在rust中，所有外设的使用都需要先经过一个统一的初始化，将所有片上外设的所有权一次性全部拿走，然后再通过一个对象统一管理外设，按需分配使用。 
+在rust中，所有外设的使用都需要先经过一个统一的初始化，将片上外设的所有权一次性全部拿走，然后再通过一个对象统一管理外设，按需分配使用。 
 
 ```rust
 let peripherals = esp_hal::init(config);
 ```
 
-经过统一初始化后，`peripherals`获得全部外设的所有权，GPIO从`peripherals`中拿走所需引脚并进行初始化配置：
+在源码中，经过统一初始化后，`peripherals`获得全部外设的所有权，从`peripherals`中拿走所需引脚并进行GPIO的初始化配置：
 
 ```rust
 let mut led = Output::new(peripherals.GPIO2, Level::Low, OutputConfig::default());
@@ -140,7 +140,7 @@ This struct is used to configure the drive mode, drive strength, and pull direct
 - Drive strength: `DriveStrength::_20mA`
 - Pull direction: `Pull::None` (no pull resistors connected)
 
-因此，自行配置输出模式并初始化的流程为：
+因此，自行配置GPIO输出/输出模式并初始化的流程及示例如下：
 
 **创建配置→修改配置结构体字段→创建`Output/Input`对象**
 
@@ -151,6 +151,4 @@ let config = OutputConfig::default()
 let mut led = Output::new(peripherals.GPIO2, Level::Low, config);
 ```
 
-然后就可以调用输出模式的相关驱动函数，详情可见官方文档[Output in esp_hal::gpio - Rust](https://docs.espressif.com/projects/rust/esp-hal/1.1.0/esp32s3/esp_hal/gpio/struct.Output.html)。
-
-## Delay
+然后就可以调用`Output/Input`的内部方法即GPIO的相关驱动函数，详情可见官方文档[Output in esp_hal::gpio - Rust](https://docs.espressif.com/projects/rust/esp-hal/1.1.0/esp32s3/esp_hal/gpio/struct.Output.html)。
