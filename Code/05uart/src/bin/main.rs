@@ -11,7 +11,7 @@ use esp_hal::{
     clock::CpuClock,
     main,
     time::{Duration, Instant},
-    uart::*,
+    uart::*, // includes Uart Module 
 };
 
 use log::info;
@@ -68,7 +68,7 @@ fn main() -> ! {
         .with_stop_bits(StopBits::_1);
 
     let mut uart = Uart::new(peripherals.UART1, uart_config)
-        .expect("Failed to initialize UART")    //
+        .expect("Failed to initialize UART")    
         .with_tx(peripherals.GPIO43)
         .with_rx(peripherals.GPIO44);   
 
