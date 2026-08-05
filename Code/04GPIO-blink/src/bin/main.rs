@@ -60,7 +60,7 @@ fn main() -> ! {
 
     esp_alloc::heap_allocator!(#[esp_hal::ram(reclaimed)] size: 73744);
 
-    // led initialization 
+    // gpio initialization 
     let mut led = Output::new(peripherals.GPIO2, Level::Low, OutputConfig::default());
     let delay = esp_hal::delay::Delay::new();
 
@@ -69,12 +69,11 @@ fn main() -> ! {
     //     .with_pull(Pull::None);
     // let mut led = Output::new(peripherals.GPIO2, Level::Low, config);
 
-    // led blink
     led.set_high();
     delay.delay_millis(1000);
 
     led.set_low();
-    delay.delay_millis(1000);
+    delay.delay_millis(1000); 
 
     loop {
        led.toggle();
