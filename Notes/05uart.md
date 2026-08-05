@@ -78,7 +78,7 @@ fn main() -> ! {
         .with_rx(peripherals.GPIO44);   
 
     let message = b"Hello, UART!\n";
-    
+
     // delay initialization
     let delay = esp_hal::delay::Delay::new();
 
@@ -92,6 +92,22 @@ fn main() -> ! {
 ```
 
 # 烧录运行
+
+使用下列命令进行编译：
+
+```powershell
+cargo build 
+```
+
+使用下列命令进行烧录运行：
+
+```powershell
+cargo espflash flash --monitor
+```
+
+**预期效果：**
+
+在编译及烧录成功之后，日志输出信息应每秒打印一次**Hello, UART!**
 
 # 代码讲解
 
@@ -160,9 +176,9 @@ fn uart_init()-> Result<Uart, Error>
 fn main()-> Result<()> 
 {
     // ......
-    
+
     let mut uart = uart_init()?；
-    
+
     OK(())
 }
 ```
@@ -206,5 +222,3 @@ let bytes: &[u8] = msg.as_bytes(); // 得到 [72, 101, 108, 108, 111]
 - **`&[u8]]`（字节切片）**：**可以是任何数据**。它只是一段内存的字节集合，不关心这些字节代表什么。它可以是 UTF-8 文本、图片的二进制数据、传感器原始读数，或者是乱码。
 
 串口通信时要求使用的是字节切片`&[u8]`，而其本身传输的数据也是字节流。
-
-
