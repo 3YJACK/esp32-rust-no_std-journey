@@ -34,7 +34,7 @@ extern crate alloc;
 // For more information see: <https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/app_image_format.html#application-description>
 esp_bootloader_esp_idf::esp_app_desc!();
 
-// 对于mian函数，通过#[allow]来允许使用大型栈数据以通过编译
+// 对于main函数，通过#[allow]来允许使用大型栈数据以通过编译
 #[allow(
     clippy::large_stack_frames,
     reason = "it's not unusual to allocate larger buffers etc. in main"
