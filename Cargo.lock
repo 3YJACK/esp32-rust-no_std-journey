@@ -875,6 +875,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "interrupt"
+version = "0.1.0"
+dependencies = [
+ "critical-section",
+ "esp-alloc",
+ "esp-backtrace",
+ "esp-bootloader-esp-idf",
+ "esp-hal",
+ "esp-println",
+ "log",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
