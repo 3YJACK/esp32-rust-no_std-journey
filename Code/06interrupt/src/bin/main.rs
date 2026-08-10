@@ -80,9 +80,9 @@ fn main() -> ! {
     critical_section::with(|cs| {
         // 设置按钮引脚为下降沿触发中断
         button.listen(Event::FallingEdge);
-        // 将BUTTON全局变量替换为实例化的button对象，这样中断处理程序就可以访问到按钮引脚
-        BUTTON.borrow_ref_mut(cs)   // 获取BUTTON的临界区互斥锁并借用可变引用
-              .replace(button)
+        // 获取BUTTON的临界区互斥锁并借用可变引用
+        BUTTON.borrow_ref_mut(cs)   
+              .replace(button)   // 将BUTTON全局变量替换为实例化的button对象，这样中断处理程序就可以访问到按钮引脚
     });
 
     loop {
