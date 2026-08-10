@@ -78,7 +78,7 @@ fn main() -> ! {
     let mut led = Output::new(peripherals.GPIO4, Level::Low, OutputConfig::default());
 
     let config = InputConfig::default().with_pull(Pull::Up);
-    let mut button = Input::new(peripherals.GPIO0, config);
+    let mut button = Input::new(peripherals.GPIO6, config);
 
     critical_section::with(|cs| {
         // 设置按钮引脚为下降沿触发中断
