@@ -16,7 +16,8 @@ use esp_hal::{
     main,
     time::{Duration, Instant},
     gpio::*,
-
+    handler,
+    ram,
 };
 
 use log::info;
@@ -32,6 +33,8 @@ esp_bootloader_esp_idf::esp_app_desc!();
 // 为了让中断处理程序能够访问，定义为全局变量，再包装为Mutex临界区互斥锁和RefCell内部可变器，同时使用Option包装Input类型，进行延迟初始化
 // 因为static变量在编译时就是确定值，而Input类型的对象实例化在运行时才能完成，所以先使用Option类型包装并赋值为None进行占位，完成实例化后再替换
 static BUTTON: Mutex<RefCell<Option<Input>>> = Mutex::new(RefCell::new(None));
+
+static LED: Mutex<RefCell<Option<Output>>> = Mutex::new(RefCell::new(None));
 
 #[allow(
     clippy::large_stack_frames,
@@ -85,6 +88,11 @@ fn main() -> ! {
               .replace(button)   // 将BUTTON全局变量替换为实例化的button对象，这样中断处理程序就可以访问到按钮引脚
     });
 
+    critical_section::with(|cs| {
+        LED.borrow_ref_mut(cs)
+           .replace(led)   
+    });
+
     loop {
 
     }
@@ -107,7 +115,12 @@ fn handler() {
             // 查看BUTTON引脚是否触发了中断
             .is_interrupt_set()
     }) {
-        led.toggle();
+        critical_section::with(|cs| {
+            LED.borrow_ref_mut(cs)
+                .as_mut()
+                .unwrap()
+                .toggle();
+        });
         info!("Button was the source of the interrupt");
     } else {
         info!("Button was not the source of the interrupt");
