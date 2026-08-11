@@ -126,7 +126,7 @@ fn handler() {
             info!("Button was not the source of the interrupt");
         }
 
-        // 4. 清除中断标志（无论是否触发，都应清除以避免重复触发）
+        // 清除中断标志
         BUTTON.clear_interrupt();
     });
 }
