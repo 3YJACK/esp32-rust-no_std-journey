@@ -97,7 +97,7 @@ fn main() -> ! {
 
     loop {
         info!("Waiting for button press...");
-        delay.delay_ms(5000);
+        delay.delay_millis(5000);
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
@@ -112,11 +112,11 @@ fn handler() {
         // borrow_ref_mut返回的RefMut<Option<Input>>类型，这是一个指向Option的智能指针，
         // as_mut()方法从RefMut<Option<Input>>中取出Option<&mut Input>，
         // unwrap()方法解封装Option，如果Option是Some，则返回其中的值&mut Input，如果是None，则会panic。 
-        BUTTON.borrow_ref_mut(cs)
-            .as_mut()
-            .expect("Button not initialized");
+        let mut button_ref = BUTTON.borrow_ref_mut(cs);
+        let button = button_ref.as_mut()
+                            .expect("Button not initialized");
 
-        if BUTTON.is_interrupt_set() {
+        if button.is_interrupt_set() {
             LED.borrow_ref_mut(cs)
                 .as_mut()
                 .expect("LED not initialized")
@@ -128,6 +128,6 @@ fn handler() {
         }
 
         // 清除中断标志
-        BUTTON.clear_interrupt();
+        button.clear_interrupt();
     });
 }
