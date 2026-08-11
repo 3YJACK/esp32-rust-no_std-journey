@@ -18,6 +18,7 @@ use esp_hal::{
     gpio::*,
     handler,
     ram,
+    delay::*,
 };
 
 use log::info;
@@ -85,16 +86,17 @@ fn main() -> ! {
         button.listen(Event::FallingEdge);
         // 获取BUTTON的临界区互斥锁并借用可变引用
         BUTTON.borrow_ref_mut(cs)   
-              .replace(button)   // 将BUTTON全局变量替换为实例化的button对象，这样中断处理程序就可以访问到按钮引脚
+              .replace(button);   // 将BUTTON全局变量替换为实例化的button对象，这样中断处理程序就可以访问到按钮引脚
+
+        LED.borrow_ref_mut(cs)
+           .replace(led);   
     });
 
-    critical_section::with(|cs| {
-        LED.borrow_ref_mut(cs)
-           .replace(led)   
-    });
+    let delay = Delay::new();
 
     loop {
-
+        info!("Waiting for button press...");
+        delay.delay_ms(5000);
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
