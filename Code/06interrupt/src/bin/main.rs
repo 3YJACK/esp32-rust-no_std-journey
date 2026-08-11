@@ -106,34 +106,27 @@ fn main() -> ! {
 // 中断处理程序，必须使用#[ram]属性将其放置在RAM中，以便在中断发生时能够快速响应
 #[ram]
 fn handler() {
-    if critical_section::with(|cs| {
-        BUTTON
-            // borrow_ref_mut返回的RefMut<Option<Input>>类型，这是一个指向Option的智能指针，
-            // as_mut()方法从RefMut<Option<Input>>中取出Option<&mut Input>，
-            // unwrap()方法解封装Option，如果Option是Some，则返回其中的值&mut Input，如果是None，则会panic。            
-            .borrow_ref_mut(cs)
-            .as_mut()   
-            .unwrap()
-            // 查看BUTTON引脚是否触发了中断
-            .is_interrupt_set()
-    }) {
-        critical_section::with(|cs| {
+    critical_section::with(|cs| {
+
+        // borrow_ref_mut返回的RefMut<Option<Input>>类型，这是一个指向Option的智能指针，
+        // as_mut()方法从RefMut<Option<Input>>中取出Option<&mut Input>，
+        // unwrap()方法解封装Option，如果Option是Some，则返回其中的值&mut Input，如果是None，则会panic。 
+        BUTTON.borrow_ref_mut(cs)
+            .as_mut()
+            .expect("Button not initialized");
+
+        if BUTTON.is_interrupt_set() {
             LED.borrow_ref_mut(cs)
                 .as_mut()
-                .unwrap()
+                .expect("LED not initialized")
                 .toggle();
-        });
-        info!("Button was the source of the interrupt");
-    } else {
-        info!("Button was not the source of the interrupt");
-    }
 
-    critical_section::with(|cs| {
-        BUTTON
-            .borrow_ref_mut(cs)
-            .as_mut()   
-            .unwrap()
-            // 与is_interrupt_set()方法配合成对使用，清除中断标志位，防止中断处理程序被重复触发
-            .clear_interrupt()
+            info!("Button was the source of the interrupt");
+        } else {
+            info!("Button was not the source of the interrupt");
+        }
+
+        // 4. 清除中断标志（无论是否触发，都应清除以避免重复触发）
+        BUTTON.clear_interrupt();
     });
 }
