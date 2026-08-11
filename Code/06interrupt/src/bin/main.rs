@@ -108,7 +108,6 @@ fn main() -> ! {
 #[ram]
 fn handler() {
     critical_section::with(|cs| {
-
         // borrow_ref_mut返回的RefMut<Option<Input>>类型，这是一个指向Option的智能指针，
         // as_mut()方法从RefMut<Option<Input>>中取出Option<&mut Input>，
         // unwrap()方法解封装Option，如果Option是Some，则返回其中的值&mut Input，如果是None，则会panic。 
@@ -123,9 +122,7 @@ fn handler() {
                 .toggle();
 
             info!("Button was the source of the interrupt");
-        } else {
-            info!("Button was not the source of the interrupt");
-        }
+        } 
 
         // 清除中断标志
         button.clear_interrupt();
