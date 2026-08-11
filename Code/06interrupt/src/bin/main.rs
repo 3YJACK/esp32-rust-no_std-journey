@@ -72,7 +72,7 @@ fn main() -> ! {
 
     esp_alloc::heap_allocator!(#[esp_hal::ram(reclaimed)] size: 73744);
 
-    // 创建IO引脚管理器并设置中断处理程序
+    // 创建IO引脚管理器并设置中断处理程序为handler函数
     let mut io = Io::new(peripherals.IO_MUX);
     io.set_interrupt_handler(handler);
 
@@ -81,6 +81,7 @@ fn main() -> ! {
     let config = InputConfig::default().with_pull(Pull::Up);
     let mut button = Input::new(peripherals.GPIO6, config);
 
+    // 临界区保护
     critical_section::with(|cs| {
         // 设置按钮引脚为下降沿触发中断
         button.listen(Event::FallingEdge);
