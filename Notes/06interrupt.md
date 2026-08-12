@@ -9,7 +9,136 @@
 # 完整源码
 
 ```rust
+#![no_std]
+#![no_main]
+#![deny(
+    clippy::mem_forget,
+    reason = "mem::forget is generally not safe to do with esp_hal types, especially those \
+    holding buffers for the duration of a data transfer."
+)]
+#![deny(clippy::large_stack_frames)]
 
+use core::cell::RefCell;
+
+use critical_section::Mutex;
+
+use esp_hal::{
+    clock::CpuClock,
+    main,
+    time::{Duration, Instant},
+    gpio::*,
+    handler,
+    ram,
+    delay::*,
+};
+
+use log::info;
+
+use esp_backtrace as _;
+
+extern crate alloc;
+
+// This creates a default app-descriptor required by the esp-idf bootloader.
+// For more information see: <https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/app_image_format.html#application-description>
+esp_bootloader_esp_idf::esp_app_desc!();
+
+// 为了让中断处理程序能够访问，定义为全局变量，再包装为Mutex临界区互斥锁和RefCell内部可变器，同时使用Option包装Input类型，进行延迟初始化
+// 因为static变量在编译时就是确定值，而Input类型的对象实例化在运行时才能完成，所以先使用Option类型包装并赋值为None进行占位，完成实例化后再替换
+static BUTTON: Mutex<RefCell<Option<Input>>> = Mutex::new(RefCell::new(None));
+
+static LED: Mutex<RefCell<Option<Output>>> = Mutex::new(RefCell::new(None));
+
+#[allow(
+    clippy::large_stack_frames,
+    reason = "it's not unusual to allocate larger buffers etc. in main"
+)]
+#[main]
+fn main() -> ! {
+    // generator version: 1.3.0
+    // generator parameters: --chip esp32s3 -o esp32s3-wroom-1-octal-psram -o unstable-hal -o alloc -o stack-smashing-protection -o log -o esp-backtrace -o vscode
+
+    esp_println::logger::init_logger_from_env();
+
+    let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
+    let peripherals = esp_hal::init(config);
+
+    // The following pins are used to bootstrap the chip. They are available
+    // for use, but check the datasheet of the module for more information on them.
+    // - GPIO0
+    // - GPIO3
+    // - GPIO45
+    // - GPIO46
+    // These GPIO pins are in use by some feature of the module and should not be used.
+    let _ = peripherals.GPIO27;
+    let _ = peripherals.GPIO28;
+    let _ = peripherals.GPIO29;
+    let _ = peripherals.GPIO30;
+    let _ = peripherals.GPIO31;
+    let _ = peripherals.GPIO32;
+    let _ = peripherals.GPIO33;
+    let _ = peripherals.GPIO34;
+    let _ = peripherals.GPIO35;
+    let _ = peripherals.GPIO36;
+    let _ = peripherals.GPIO37;
+
+    esp_alloc::heap_allocator!(#[esp_hal::ram(reclaimed)] size: 73744);
+
+    // 创建IO引脚管理器并设置中断处理程序为handler函数
+    let mut io = Io::new(peripherals.IO_MUX);
+    io.set_interrupt_handler(handler);
+
+    let mut led = Output::new(peripherals.GPIO4, Level::Low, OutputConfig::default());
+
+    let config = InputConfig::default().with_pull(Pull::Up);
+    let mut button = Input::new(peripherals.GPIO6, config);
+
+    // 临界区保护
+    critical_section::with(|cs| {
+        // 设置按钮引脚为下降沿触发中断
+        button.listen(Event::FallingEdge);
+        // 获取BUTTON的临界区互斥锁并借用可变引用
+        BUTTON.borrow_ref_mut(cs)   
+              .replace(button);   // 将BUTTON全局变量替换为实例化的button对象，这样中断处理程序就可以访问到按钮引脚
+
+        LED.borrow_ref_mut(cs)
+           .replace(led);   
+    });
+
+    let delay = Delay::new();
+
+    loop {
+        info!("Waiting for button press...");
+        delay.delay_millis(5000);
+    }
+
+    // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
+}
+
+#[handler]
+// 中断处理程序，必须使用#[ram]属性将其放置在RAM中，以便在中断发生时能够快速响应
+#[ram]
+fn handler() {
+    critical_section::with(|cs| {
+        // borrow_ref_mut返回的RefMut<Option<Input>>类型，这是一个指向Option的智能指针，
+        // as_mut()方法从RefMut<Option<Input>>中取出Option<&mut Input>，
+        // expect()方法解封装Option，如果Option是Some，则返回其中的值&mut Input，如果是None，则会panic。 
+        let mut button_ref = BUTTON.borrow_ref_mut(cs); 
+        let button = button_ref.as_mut()
+                            .expect("Button not initialized");
+
+        if button.is_interrupt_set() {
+            LED.borrow_ref_mut(cs)
+                .as_mut()
+                .expect("LED not initialized")
+                .toggle();
+
+            info!("Button was the source of the interrupt");
+        } 
+ 
+        // 清除中断标志
+        button.clear_interrupt();
+    });
+}
 ```
 
 **IO连接对照表：**
@@ -43,7 +172,7 @@ cargo espflash flash --monitor
 
 在rust的借用规则中，**一个值只能有多个不可变引用`&` 或一个可变引用 `&mut` ，两种引用不能同时存在**。
 
-但实际开发中，一个数据常常被多个模块持有并操作。正如本篇的按键中断示例，按键的值既在主函数中创建修改，又在中断服务函数中不断读取。因为中断是随时可以发生的，在编译器看来两者可能同时存在，这违反了rust的借用规则，因此无法通过编译。所以我们需要引用`RefCell`，来避开这个规则限制。
+但实际开发中，一个数据常常被多个模块持有并操作。正如本篇的按键中断示例，按键的值既在主函数中创建修改，又在中断服务函数中不断读取。因为中断是随时可以发生的，在编译器看来两者可能同时存在，这违反了rust的借用规则，是无法通过编译的。所以我们需要引用`RefCell`，来避开这个规则限制。
 
 ```rust
 use core::cell::RefCell;
@@ -94,7 +223,7 @@ fn main() {
     // 3. 危险操作（运行时崩溃！）
     let r3 = data.borrow();     // 处于读取状态
     let w2 = data.borrow_mut(); // 试图申请写权限
-    // 程序运行到这里直接崩溃：already mutably borrowed
+    // 程序运行到这里直接崩溃
 }
 ```
 
@@ -131,8 +260,10 @@ static BUTTON: Mutex<RefCell<Option<Input>>> = Mutex::new(RefCell::new(None));
 static LED: Mutex<RefCell<Option<Output>>> = Mutex::new(RefCell::new(None));
 
 fn main() -> !{
-     BUTTON.replace(button);
-     LED.replace(led);  
+    critical_section::with(|cs| {
+        BUTTON.replace(button);
+        LED.replace(led);  
+    });
 }
 ```
 
@@ -142,6 +273,8 @@ fn main() -> !{
 
 **注册中断→进行中断配置→编写中断服务函数**
 
+1. **注册中断**
+
 首先创建一个IO管理器。因为ESP32的硬件特性——所有的GPIO 共享一个中断源。因此在`esp-hal`中，引脚中断被设计为由IO管理器统一集中管理，需通过IO管理器来设置中断服务函数，在函数内部通过 `is_interrupt_set()`作为中断标志位判断并分发具体的处理逻辑。
 
 ```rust
@@ -150,10 +283,105 @@ fn main() -> !{
   io.set_interrupt_handler(handler);
 ```
 
+2. **中断配置**
 
+设置中断的触发条件，完成中断需要访问的全局变量的延迟初始化替换等等，如本篇示例代码所示：
 
-同时注意临界区保护和退出中断清除标志时。
+```rust
+   critical_section::with(|cs| {
+        // 设置按钮引脚为下降沿触发中断
+        button.listen(Event::FallingEdge);
+        // 获取BUTTON的临界区互斥锁并借用可变引用
+        BUTTON.borrow_ref_mut(cs)
+        // 将BUTTON全局变量替换为实例化的button对象，这样中断处理程序就可以访问到按钮引脚   
+              .replace(button);   
 
+        LED.borrow_ref_mut(cs)
+           .replace(led);   
+    });
+```
 
+3. **中断服务函数**
+
+在rust中，对于中断服务函数通常使用`#[interrupt]`属性来标记，但在`esp-hal`库中则将其封装为了集成度更高、功能更强的`#[handler]`属性，例如可以在属性中直接指定中断优先级#`[handler(priority = esp_hal::interrupt::Priority::Priority2)]`。
+
+除此之外，`esp-hal`还提供了`#[ram]`属性，用于将中断服务函数的代码存储在读取速度更快的RAM上，而默认情况下代码是存储在Flash的，对于中断服务函数这种时间敏感型任务，可能会引发严重问题。
+
+```rust
+#[handler]
+// 中断处理程序，必须使用#[ram]属性将其放置在RAM中，以便在中断发生时能够快速响应
+#[ram]
+fn handler() {
+    critical_section::with(|cs| {
+        // borrow_ref_mut返回的RefMut<Option<Input>>类型，这是一个指向Option的智能指针，
+        // as_mut()方法从RefMut<Option<Input>>中取出Option<&mut Input>，
+        // expect()方法解封装Option，如果Option是Some，则返回其中的值&mut Input，如果是None，则会panic。 
+        let mut button_ref = BUTTON.borrow_ref_mut(cs);
+        let button = button_ref.as_mut()
+                            .expect("Button not initialized");
+
+        if button.is_interrupt_set() {
+            LED.borrow_ref_mut(cs)
+                .as_mut()
+                .expect("LED not initialized")
+                .toggle();
+
+            info!("Button was the source of the interrupt");
+        } 
+
+        // 清除中断标志
+        button.clear_interrupt();
+    });
+}
+```
+
+在中断服务函数中，通过`.is_interrupt_set()`方法来判断对应引脚的中断是否触发，在执行完中断服务后，退出函数前切记使用`.clear_interrupt()`方法清除中断标志位，避免重复中断。
+
+## Refmut守卫
+
+在中断服务函数的代码中，LED只操纵一次，所以可以链式调用、用完即弃，而BUTTON既需要查询中断标志位又需要清除标志位，如果写作调用链形式，则需多次借用，略显繁琐：
+
+```rust
+if BUTTON.borrow_ref_mut(cs)
+            .as_mut()   
+            .unwrap()
+            .is_interrupt_set()
+{
+   // ......             
+}
+
+    BUTTON.borrow_ref_mut(cs)
+        .as_mut()   
+        .unwrap()
+        .clear_interrupt()            
+```
+
+如果想要一次借用，多次操作，则需要通过赋值将借用后`BUTTON`的可变引用保存下来，那么这里你可能会跟我一样疑问，为什么在源码中要赋值两次而不是像下示代码那样一次搞定呢？
+
+```rust
+let button = BUTTON.borrow_ref_mut(cs)
+                    .as_mut()
+                    .expect("Button not initialized");
+
+if button.is_interrupt_set() {
+        LED.borrow_ref_mut(cs)
+            .as_mut()
+            .expect("LED not initialized")
+            .toggle();
+
+        info!("Button was the source of the interrupt");
+} 
+
+    // 清除中断标志
+    button.clear_interrupt();
+```
+
+这是因为`BUTTON.borrow_ref_mut()`返回的是`RefMut`类型数据，`RefMut` 是一个**守卫对象**，它内部包含一个指向 `BUTTON` 数据的引用。`.as_mut()`拿到的是对`RefMut`守卫内部的引用，`button`只保留了这个引用，但这个引用的生命周期是跟守卫绑定的。
+
+而上示代码中，守卫在调用链结束后随即被释放了，`button`所保存的引用也跟着失效，但往下又调用了`button.clear_interrupt()`，因此编译时会报错`creates a temporary value which is freed while still in use`，大意是使用了已经被释放的临时值`button`。
+
+因此需要先有一个中间值将守卫给保存下来，将其生命周期从当前语句延长到当前代码块，然后再取出其内部的可变引用赋值给一个对象，才能实现一次借用，多次操作。
+
+守卫的存在是为了实现互斥锁，其内部不仅包含有一个数据的内部可变引用，同时负责维护借用计数器，因此这个引用跟守卫的生命周期是绑定的。当守卫存活时，其他地方无法借用。当守卫离开作用域时，借用计数器清零，引用也应该随之失效，否则在其他地方又申请了可变引用时，会存在两个可变引用，这违反了rust的借用规则。
 
 
