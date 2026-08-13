@@ -33,3 +33,11 @@ cargo espflash flash --monitor
 **预期效果：**
 
 # 代码讲解
+
+## 定时器
+
+`esp-hal`中定时器有两种——`OneShotTimer`和`PeriodicTimer`，既一次性定时器和周期性定时器。定时器由定时器组`timg`进行管理，例如`ESP32S3`中一个定时器组由两个通用定时器和一个看门狗定时器组成，因此一个定时器的创建过程如下：
+
+```rust
+
+```
