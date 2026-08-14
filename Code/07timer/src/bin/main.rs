@@ -15,10 +15,10 @@ use esp_hal::{
     handler,
     ram,
     clock::CpuClock,
-    gpio::{DriveMode, Level, Output, OutputConfig},
+    gpio::*,
     time::*,
-    timer::*,
-    // ledc::{LSGlobalClkSource, Ledc, LowSpeed, channel, timer},
+    timer::{*, timg::*},
+    // ledc::*,
 };
 
 use esp_backtrace as _;
@@ -72,7 +72,7 @@ fn main() -> ! {
     // 再将一个定时器组的通用定时器实例化为周期型定时器
     let mut prd_timer = PeriodicTimer::new(timg0.timer0);
     // 设置中断处理程序为 timer_handler 函数
-    prd_timer.set_interrupt_hander(timer_handler);
+    prd_timer.set_interrupt_handler(timer_handler);
     // 监听定时器中断
     prd_timer.listen();
     // 设置定时器周期为 1000 ms并启动定时器
