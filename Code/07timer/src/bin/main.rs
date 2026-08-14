@@ -73,7 +73,9 @@ fn main() -> ! {
     let mut prd_timer = PeriodicTimer::new(timg0.timer0);
     // 设置中断处理程序为 timer_handler 函数
     prd_timer.set_interrupt_hander(timer_handler);
-    // 设置定时器周期为 1 秒并启动定时器
+    // 监听定时器中断
+    prd_timer.listen();
+    // 设置定时器周期为 1000 ms并启动定时器
     prd_timer.start(Duration::from_millis(1000));
 
     // 初始化 LED1 用于定时器中断控制其闪烁
@@ -120,3 +122,13 @@ fn main() -> ! {
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
 }
 
+#[handler]
+#[ram]
+fn timer_handler() {
+    critical_section::with(|cs| {
+        LED.borrow_ref_mut(cs)
+            .as_mut()
+            .expect("LED not initialized")
+            .toggle();
+    });
+}
