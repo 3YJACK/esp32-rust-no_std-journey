@@ -15,10 +15,10 @@ use esp_hal::{
     handler,
     ram,
     clock::CpuClock,
-    gpio::{Output, Level, OutputConfig},
+    gpio::{Output, Level, OutputConfig, DriveMode},
     time::{Duration},
     timer::{PeriodicTimer, timg::TimerGroup},
-    // ledc::*,
+    ledc::{Ledc},
 };
 
 use esp_backtrace as _;
@@ -85,27 +85,27 @@ fn main() -> ! {
             .replace(led1);
     });
 
-    // // 2) PWM：另一个 LED 作为呼吸灯
-    // let mut ledc = Ledc::new(peripherals.LEDC);
-    // ledc.set_global_slow_clock(LSGlobalClkSource::APBClk);
+    // 创建 LED2 用于 PWM 控制其亮度，采用 LEDC 外设
+    let mut led2 = Ledc::new(peripherals.LEDC);
+    // 根据官方文档可知 LEDC 使用时钟源为 APB 
+    led2.set_global_slow_clock(LSGlobalClkSource::APBClk);
 
-    // let mut pwm_timer = ledc.timer::<LowSpeed>(timer::Number::Timer0);
-    // pwm_timer
-    //     .configure(timer::config::Config {
-    //         duty: timer::config::Duty::Duty8Bit,
-    //         clock_source: timer::LSClockSource::APBClk,
-    //         frequency: Rate::from_hz(1000),
-    //     })
-    //     .unwrap();
+    // 创建一个低速定时器实例用于 LED2 的 PWM 控制
+    let mut pwm_timer = led2.timer::<LowSpeed>(timer::Number::Timer0);
+    pwm_timer.configure(timer::config::Config {
+            duty: timer::config::Duty::Duty8Bit,
+            clock_source: timer::LSClockSource::APBClk,
+            frequency: Rate::from_hz(1000),
+        }).expect("Failed to configure PWM timer");
 
-    // let mut pwm_led = ledc.channel(channel::Number::Channel0, peripherals.GPIO4);
-    // pwm_led
-    //     .configure(channel::config::Config {
-    //         timer: &pwm_timer,
-    //         duty_pct: 0,
-    //         drive_mode: DriveMode::PushPull,
-    //     })
-    //     .unwrap();
+    let mut pwm_led2 = led2.channel(channel::Number::Channel0, peripherals.GPIO4);
+    pwm_led2
+        .configure(channel::config::Config {
+            timer: &pwm_timer,
+            duty_pct: 0,
+            drive_mode: DriveMode::PushPull,
+        })
+        .expect("Failed to configure PWM channel");
 
     loop {
         // prd_timer.wait();
