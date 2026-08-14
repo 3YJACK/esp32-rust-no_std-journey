@@ -15,9 +15,9 @@ use esp_hal::{
     handler,
     ram,
     clock::CpuClock,
-    gpio::*,
-    time::*,
-    timer::{*, timg::*},
+    gpio::{Output, Level, OutputConfig},
+    time::{Duration},
+    timer::{PeriodicTimer, timg::TimerGroup},
     // ledc::*,
 };
 
