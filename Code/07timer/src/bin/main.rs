@@ -14,6 +14,7 @@ use esp_hal::{
     main,
     handler,
     ram,
+    Blocking,
     clock::CpuClock,
     gpio::{Output, Level, OutputConfig, DriveMode},
     time::{Duration},
@@ -31,7 +32,7 @@ extern crate alloc;
 esp_bootloader_esp_idf::esp_app_desc!();
 
 static LED: Mutex<RefCell<Option<Output>>> = Mutex::new(RefCell::new(None));
-static TIMER: Mutex<RefCell<Option<PeriodicTimer>>> = Mutex::new(RefCell::new(None));
+static TIMER: Mutex<RefCell<Option<PeriodicTimer<Blocking>>>> = Mutex::new(RefCell::new(None));
 
 #[allow(
     clippy::large_stack_frames,
