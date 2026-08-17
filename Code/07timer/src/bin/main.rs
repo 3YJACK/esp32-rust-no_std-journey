@@ -104,24 +104,22 @@ fn main() -> ! {
             clock_source: ledc::timer::LSClockSource::APBClk,
             frequency: Rate::from_hz(1000),
         }).expect("Failed to configure PWM timer");
+
     // 将 LED2 的 GPIO6 引脚配置为 PWM 输出通道
     let mut pwm_channel = led2.channel(channel::Number::Channel0, peripherals.GPIO6);
     pwm_channel.configure(channel::config::Config {
             timer: &pwm_timer,
             duty_pct: 0,
             drive_mode: DriveMode::PushPull,
-        })
-        .expect("Failed to configure PWM channel");
+        }).expect("Failed to configure PWM channel");
 
     info!("PROGRAM RUNNING...");
     loop {
-
         pwm_channel.start_duty_fade(0, 100, 1000).unwrap();
         while pwm_channel.is_duty_fade_running() {}
 
         pwm_channel.start_duty_fade(100, 0, 1000).unwrap();
         while pwm_channel.is_duty_fade_running() {}
-
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
