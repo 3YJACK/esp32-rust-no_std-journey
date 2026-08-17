@@ -90,7 +90,7 @@ fn main() -> ! {
         TIMER.borrow_ref_mut(cs)
             .replace(prd_timer);
     });
-
+    
     // 创建 LED2 用于 PWM 控制其亮度，采用 LEDC 外设
     let mut led2 = Ledc::new(peripherals.LEDC);
     // 根据官方文档可知 LEDC 使用时钟源为 APB 
@@ -98,6 +98,7 @@ fn main() -> ! {
 
     // 创建一个低速定时器实例用于 LED2 的 PWM 控制
     let mut pwm_timer = led2.timer::<ledc::LowSpeed>(ledc::timer::Number::Timer0);
+    // 占空比位数和频率只会影响到呼吸灯效果，不影响其实现，不用纠结具体配置参数
     pwm_timer.configure(ledc::timer::config::Config {
             duty: ledc::timer::config::Duty::Duty8Bit,
             clock_source: ledc::timer::LSClockSource::APBClk,
@@ -141,5 +142,4 @@ fn timer_handler() {
             .clear_interrupt();
     });
     info!("Timer interrupt triggered, LED toggled.");
-
 }
