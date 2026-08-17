@@ -17,9 +17,9 @@ use esp_hal::{
     Blocking,
     clock::CpuClock,
     gpio::{Output, Level, OutputConfig, DriveMode},
-    time::{Duration},
+    time::{Duration, Rate},
     timer::{PeriodicTimer, timg::TimerGroup},
-    ledc::{Ledc},
+    ledc::{self, Ledc, timer::{self, TimerIFace}, channel::{self, ChannelIFace}},
 };
 
 use esp_backtrace as _;
@@ -32,7 +32,7 @@ extern crate alloc;
 esp_bootloader_esp_idf::esp_app_desc!();
 
 static LED: Mutex<RefCell<Option<Output>>> = Mutex::new(RefCell::new(None));
-static TIMER: Mutex<RefCell<Option<PeriodicTimer<Blocking>>>> = Mutex::new(RefCell::new(None));
+static TIMER: Mutex<RefCell<Option<PeriodicTimer<Blocking>>>> = Mutex::new(RefCell::new(None)); // PeriodicTimer里面填 Blocking 或 Async ，Blocking表示阻塞模式，Async表示异步模式
 
 #[allow(
     clippy::large_stack_frames,
@@ -91,39 +91,36 @@ fn main() -> ! {
             .replace(prd_timer);
     });
 
-    // // 创建 LED2 用于 PWM 控制其亮度，采用 LEDC 外设
-    // let mut led2 = Ledc::new(peripherals.LEDC);
-    // // 根据官方文档可知 LEDC 使用时钟源为 APB 
-    // led2.set_global_slow_clock(LSGlobalClkSource::APBClk);
+    // 创建 LED2 用于 PWM 控制其亮度，采用 LEDC 外设
+    let mut led2 = Ledc::new(peripherals.LEDC);
+    // 根据官方文档可知 LEDC 使用时钟源为 APB 
+    led2.set_global_slow_clock(ledc::LSGlobalClkSource::APBClk);
 
-    // // 创建一个低速定时器实例用于 LED2 的 PWM 控制
-    // let mut pwm_timer = led2.timer::<LowSpeed>(timer::Number::Timer0);
-    // pwm_timer.configure(timer::config::Config {
-    //         duty: timer::config::Duty::Duty8Bit,
-    //         clock_source: timer::LSClockSource::APBClk,
-    //         frequency: Rate::from_hz(1000),
-    //     }).expect("Failed to configure PWM timer");
+    // 创建一个低速定时器实例用于 LED2 的 PWM 控制
+    let mut pwm_timer = led2.timer::<ledc::LowSpeed>(ledc::timer::Number::Timer0);
+    pwm_timer.configure(ledc::timer::config::Config {
+            duty: ledc::timer::config::Duty::Duty8Bit,
+            clock_source: ledc::timer::LSClockSource::APBClk,
+            frequency: Rate::from_hz(1000),
+        }).expect("Failed to configure PWM timer");
+    // 将 LED2 的 GPIO6 引脚配置为 PWM 输出通道
+    let mut pwm_channel = led2.channel(channel::Number::Channel0, peripherals.GPIO6);
+    pwm_channel.configure(channel::config::Config {
+            timer: &pwm_timer,
+            duty_pct: 0,
+            drive_mode: DriveMode::PushPull,
+        })
+        .expect("Failed to configure PWM channel");
 
-    // let mut pwm_led2 = led2.channel(channel::Number::Channel0, peripherals.GPIO4);
-    // pwm_led2
-    //     .configure(channel::config::Config {
-    //         timer: &pwm_timer,
-    //         duty_pct: 0,
-    //         drive_mode: DriveMode::PushPull,
-    //     })
-    //     .expect("Failed to configure PWM channel");
-
+    info!("PROGRAM RUNNING...");
     loop {
-        // prd_timer.wait();
-        // blink_led.toggle();
 
-        // pwm_led.start_duty_fade(0, 100, 1000).unwrap();
-        // while pwm_led.is_duty_fade_running() {}
+        pwm_channel.start_duty_fade(0, 100, 1000).unwrap();
+        while pwm_channel.is_duty_fade_running() {}
 
-        // pwm_led.start_duty_fade(100, 0, 1000).unwrap();
-        // while pwm_led.is_duty_fade_running() {}
-        info!("PROGRAM RUNNING...");
-        while true {};
+        pwm_channel.start_duty_fade(100, 0, 1000).unwrap();
+        while pwm_channel.is_duty_fade_running() {}
+
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
