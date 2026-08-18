@@ -10,7 +10,8 @@
 use esp_hal::{
     clock::CpuClock,
     main,
-    time::{Duration, Instant},
+    time::Rate,
+    i2c::master::{Config, I2c},
 };
 
 use log::info;
@@ -56,14 +57,21 @@ fn main() -> ! {
     let _ = peripherals.GPIO36;
     let _ = peripherals.GPIO37;
 
-
     esp_alloc::heap_allocator!(#[esp_hal::ram(reclaimed)] size: 73744);
 
+    // Initialize I2C by default, details as follows:
+    // frequency：100kHz, timeout：disabled, software_timeout：disabled
+    // scl_st_timeout: 16, scl_main_st_timeout: 16
+    let i2c_config = Config::default(); 
+    let i2c = I2c::new(peripherals.I2C0, i2c_config)
+            .expect("Failed to initialize I2C")
+            .with_scl(peripherals.GPIO21)
+            .with_sda(peripherals.GPIO20);
+
+    
 
     loop {
-        info!("Hello world!");
-        let delay_start = Instant::now();
-        while delay_start.elapsed() < Duration::from_millis(500) {}
+
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
