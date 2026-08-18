@@ -4,7 +4,7 @@ members = [
   "Code/04GPIO-blink",
   "Code/05uart",
   "Code/06interrupt",
-  "Code/07timer"
+  "Code/07timer",
   "Code/08i2c-oled"
 ]
 resolver = "3"
