@@ -65,8 +65,8 @@ fn main() -> ! {
     let i2c_config = Config::default(); 
     let i2c = I2c::new(peripherals.I2C0, i2c_config)
             .expect("Failed to initialize I2C")
-            .with_scl(peripherals.GPIO21)
-            .with_sda(peripherals.GPIO20);
+            .with_scl(peripherals.GPIO42)
+            .with_sda(peripherals.GPIO41);
 
     
 
