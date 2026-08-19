@@ -2,9 +2,7 @@
 
 1. 通过官方包管理器`Cargo`添加第三方库依赖包OLED显示屏的`ssd1306`驱动
 
-2. 使用`esp-generate`创建工程，因`esp-rs/esp-hal`仓库的示例中并没有i2c的相关演示，因此参考官方文档[esp_hal - Rust](https://docs.espressif.com/projects/rust/esp-hal/1.1.0/esp32s3/esp_hal/index.html)来编写示例并实现对OLED显示屏的驱动与i2c通信
-
-**前置知识：**
+2. 使用`esp-generate`创建工程，参考官方文档[esp_hal - Rust](https://docs.espressif.com/projects/rust/esp-hal/1.1.0/esp32s3/esp_hal/index.html)和ssd1306驱动的文档[ssd1306 - Rust](https://docs.rs/ssd1306/0.10.0/ssd1306/index.html)来编写本篇示例并实现通过i2c通信对OLED显示屏的驱动
 
 # 添加依赖
 
@@ -40,17 +38,16 @@ use ssd1306::{......}；
 
 # 完整源码
 
-本篇示例内容分两部分，初始化i2c和通过`ssd1306`的驱动库操作OLED显示屏。其中`ssd1306`
-
 ```rust
 
 ```
 
 **引脚连接参照表：**
 
-|     |     |
-| --- | --- |
-|     |     |
+| 外设       | 对应引脚   |
+| -------- | ------ |
+| OLED_SCL | GPIO42 |
+| OLED_SDA | GPIO41 |
 
 # 烧录运行
 
@@ -69,6 +66,29 @@ cargo espflash flash --monitor
 **预期效果：**
 
 # 代码讲解
+
+## I2C
+
+i2c外设的配置及创建示例如下：
+
+```rust
+    let i2c_config = Config::default(); 
+    let i2c = I2c::new(peripherals.I2C0, i2c_config)
+            .expect("Failed to initialize I2C")
+            .with_scl(peripherals.GPIO42)
+            .with_sda(peripherals.GPIO41);
+```
+
+若想修改配置，对配置结构体使用`with_XXX()`的方法即可，具体API可见官方文档。创建完毕后便可以调用I2C的相关读写方法，详情也可在官方文档查询。
+
+通过I2C进行外设驱动时，很多时候会依赖于第三方驱动库实现。一般都是按照驱动的文档或示例说明，将创建好的I2C实例注入驱动库，然后就直接调用驱动库的API进行驱动与通信。
+
+```rust
+    let interface = I2CDisplayInterface::new(i2c);
+    let mut display = Ssd1306::new(interface, DisplaySize128x64, 
+                                    DisplayRotation::Rotate0)；
+    // ......
+```
 
 ## 平台无关驱动
 
@@ -136,7 +156,7 @@ Ssd1306<esp_hal::i2c::master::I2c<'_, Blocking>>
 
 - **Rust `embedded-hal` 的做法**： `i2c.write(address, data)`，这个 Trait 方法在编译时会被替换成具体的 `esp_hal::i2c::I2C` 或 `stm32_hal::i2c::I2C` 的实现。驱动代码**不关心**硬件平台用的是 ESP32 还是 STM32。
 
-|          | **Linux 抽象**                | **Rust `embedded-hal` 抽象**                     |
+|          | **Linux 抽象**                | **Rust 抽象**                                    |
 | -------- | --------------------------- | ---------------------------------------------- |
 | **发生时机** | **运行时**                     | **编译时**                                        |
 | **实现机制** | 函数指针、结构体虚表（Vtable）、设备树动态匹配。 | 泛型单态化（Monomorphization）、静态分发（Static Dispatch）。 |
