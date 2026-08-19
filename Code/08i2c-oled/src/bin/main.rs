@@ -10,8 +10,15 @@
 use esp_hal::{
     clock::CpuClock,
     main,
-    time::Rate,
     i2c::master::{Config, I2c},
+};
+
+use ssd1306::{I2CDisplayInterface, Ssd1306, command::AddrMode, rotation::*, size::*};
+use embedded_graphics::{ 
+    prelude::*,
+    mono_font::{ascii::FONT_6X10, MonoTextStyleBuilder},
+    pixelcolor::BinaryColor,
+    text::{Baseline, Text},
 };
 
 use log::info;
@@ -68,10 +75,30 @@ fn main() -> ! {
             .with_scl(peripherals.GPIO42)
             .with_sda(peripherals.GPIO41);
 
+    let interface = I2CDisplayInterface::new(i2c);
+    let mut display = Ssd1306::new(interface, DisplaySize128x64, DisplayRotation::Rotate0)
+        .into_buffered_graphics_mode();
+    display.init_with_addr_mode(AddrMode::Page)
+        .expect("Failed to initialize oled display");
+
+    let text_style = MonoTextStyleBuilder::new()
+        .font(&FONT_6X10)
+        .text_color(BinaryColor::On)
+        .build();
+
+    Text::with_baseline("Hello world!", Point::zero(), text_style, Baseline::Top)
+    .draw(&mut display)
+    .expect("Failed to draw text 1");
     
+    Text::with_baseline("Hello Rust!", Point::new(0, 16), text_style, Baseline::Top)
+    .draw(&mut display)
+    .expect("Failed to draw text 2");
 
+    display.flush().expect("Failed to flush display");
+
+    info!("program running");
     loop {
-
+        
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
