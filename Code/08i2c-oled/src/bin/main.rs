@@ -76,15 +76,18 @@ fn main() -> ! {
             .with_sda(peripherals.GPIO41);
 
     let interface = I2CDisplayInterface::new(i2c);
+
     let mut display = Ssd1306::new(interface, DisplaySize128x64, DisplayRotation::Rotate0)
         .into_buffered_graphics_mode();
-    display.init_with_addr_mode(AddrMode::Page)
+    display.init_with_addr_mode(AddrMode::Horizontal)
         .expect("Failed to initialize oled display");
 
     let text_style = MonoTextStyleBuilder::new()
         .font(&FONT_6X10)
         .text_color(BinaryColor::On)
         .build();
+
+    display.clear_buffer();
 
     Text::with_baseline("Hello world!", Point::zero(), text_style, Baseline::Top)
     .draw(&mut display)

@@ -39,15 +39,122 @@ use ssd1306::{......}；
 # 完整源码
 
 ```rust
+#![no_std]
+#![no_main]
+#![deny(
+    clippy::mem_forget,
+    reason = "mem::forget is generally not safe to do with esp_hal types, especially those \
+    holding buffers for the duration of a data transfer."
+)]
+#![deny(clippy::large_stack_frames)]
 
+use esp_hal::{
+    clock::CpuClock,
+    main,
+    i2c::master::{Config, I2c},
+};
+
+use ssd1306::{I2CDisplayInterface, Ssd1306, command::AddrMode, rotation::*, size::*};
+use embedded_graphics::{ 
+    prelude::*,
+    mono_font::{ascii::FONT_6X10, MonoTextStyleBuilder},
+    pixelcolor::BinaryColor,
+    text::{Baseline, Text},
+};
+
+use log::info;
+
+use esp_backtrace as _;
+
+extern crate alloc;
+
+// This creates a default app-descriptor required by the esp-idf bootloader.
+// For more information see: <https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/app_image_format.html#application-description>
+esp_bootloader_esp_idf::esp_app_desc!();
+
+#[allow(
+    clippy::large_stack_frames,
+    reason = "it's not unusual to allocate larger buffers etc. in main"
+)]
+#[main]
+fn main() -> ! {
+    // generator version: 1.3.0
+    // generator parameters: --chip esp32s3 -o esp32s3-wroom-1-octal-psram -o unstable-hal -o alloc -o stack-smashing-protection -o log -o esp-backtrace -o vscode
+
+    esp_println::logger::init_logger_from_env();
+
+    let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
+    let peripherals = esp_hal::init(config);
+
+    // The following pins are used to bootstrap the chip. They are available
+    // for use, but check the datasheet of the module for more information on them.
+    // - GPIO0
+    // - GPIO3
+    // - GPIO45
+    // - GPIO46
+    // These GPIO pins are in use by some feature of the module and should not be used.
+    let _ = peripherals.GPIO27;
+    let _ = peripherals.GPIO28;
+    let _ = peripherals.GPIO29;
+    let _ = peripherals.GPIO30;
+    let _ = peripherals.GPIO31;
+    let _ = peripherals.GPIO32;
+    let _ = peripherals.GPIO33;
+    let _ = peripherals.GPIO34;
+    let _ = peripherals.GPIO35;
+    let _ = peripherals.GPIO36;
+    let _ = peripherals.GPIO37;
+
+    esp_alloc::heap_allocator!(#[esp_hal::ram(reclaimed)] size: 73744);
+
+    // Initialize I2C by default, details as follows:
+    // frequency：100kHz, timeout：disabled, software_timeout：disabled
+    // scl_st_timeout: 16, scl_main_st_timeout: 16
+    let i2c_config = Config::default(); 
+    let i2c = I2c::new(peripherals.I2C0, i2c_config)
+            .expect("Failed to initialize I2C")
+            .with_scl(peripherals.GPIO42)
+            .with_sda(peripherals.GPIO41);
+
+    let interface = I2CDisplayInterface::new(i2c);
+
+    let mut display = Ssd1306::new(interface, DisplaySize128x64, DisplayRotation::Rotate0)
+        .into_buffered_graphics_mode();
+    display.init_with_addr_mode(AddrMode::Horizontal)
+        .expect("Failed to initialize oled display");
+
+    let text_style = MonoTextStyleBuilder::new()
+        .font(&FONT_6X10)
+        .text_color(BinaryColor::On)
+        .build();
+
+    display.clear_buffer();
+
+    Text::with_baseline("Hello world!", Point::zero(), text_style, Baseline::Top)
+    .draw(&mut display)
+    .expect("Failed to draw text 1");
+    
+    Text::with_baseline("Hello Rust!", Point::new(0, 16), text_style, Baseline::Top)
+    .draw(&mut display)
+    .expect("Failed to draw text 2");
+
+    display.flush().expect("Failed to flush display");
+
+    info!("program running");
+    loop {
+        
+    }
+
+    // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
+}
 ```
 
 **引脚连接参照表：**
 
-| 外设       | 对应引脚   |
-| -------- | ------ |
-| OLED_SCL | GPIO42 |
-| OLED_SDA | GPIO41 |
+| 外设     | 对应引脚 |
+| -------- | -------- |
+| OLED_SCL | GPIO42   |
+| OLED_SDA | GPIO41   |
 
 # 烧录运行
 
@@ -64,6 +171,8 @@ cargo espflash flash --monitor
 ```
 
 **预期效果：**
+
+连接好`SSD1306`驱动的OLED显示屏，烧录运行程序后应可以看到OLED显示屏中分两行显示信息。第一行显示"Hello world!""，第二行显示"Hello Rust!"。
 
 # 代码讲解
 
@@ -104,10 +213,10 @@ i2c外设的配置及创建示例如下：
 
 因此在`embedded-hal`生态中，设备驱动和芯片厂商的角色分工非常明确：
 
-| 角色         | 做什么                           | 例子                           |
-| ---------- | ----------------------------- | ---------------------------- |
-| **芯片HAL库** | 为具体芯片实现`embedded-hal`的trait   | `esp-hal`、`stm32f4xx-hal`    |
-| **设备驱动**   | 只依赖`embedded-hal`的trait，不关心芯片 | `ssd1306`、`bmp180`、`mpu6050` |
+| 角色          | 做什么                                  | 例子                           |
+| ------------- | --------------------------------------- | ------------------------------ |
+| **芯片HAL库** | 为具体芯片实现`embedded-hal`的trait     | `esp-hal`、`stm32f4xx-hal`     |
+| **设备驱动**  | 只依赖`embedded-hal`的trait，不关心芯片 | `ssd1306`、`bmp180`、`mpu6050` |
 
 **芯片HAL库**：如`esp-hal`，负责把ESP32的硬件寄存器操作，封装成`embedded_hal::i2c::I2c` trait的实现。
 
@@ -156,9 +265,9 @@ Ssd1306<esp_hal::i2c::master::I2c<'_, Blocking>>
 
 - **Rust `embedded-hal` 的做法**： `i2c.write(address, data)`，这个 Trait 方法在编译时会被替换成具体的 `esp_hal::i2c::I2C` 或 `stm32_hal::i2c::I2C` 的实现。驱动代码**不关心**硬件平台用的是 ESP32 还是 STM32。
 
-|          | **Linux 抽象**                | **Rust 抽象**                                    |
-| -------- | --------------------------- | ---------------------------------------------- |
-| **发生时机** | **运行时**                     | **编译时**                                        |
+|              | **Linux 抽象**                                   | **Rust 抽象**                                                 |
+| ------------ | ------------------------------------------------ | ------------------------------------------------------------- |
+| **发生时机** | **运行时**                                       | **编译时**                                                    |
 | **实现机制** | 函数指针、结构体虚表（Vtable）、设备树动态匹配。 | 泛型单态化（Monomorphization）、静态分发（Static Dispatch）。 |
-| **性能开销** | 有运行时开销（函数指针跳转、指令缓存污染）。      | **零开销**，编译后生成的代码。                              |
-| **灵活性**  | 可以在不重启系统的情况下加载/卸载驱动模块。      | 驱动在编译时就已完全固定。换一颗芯片，需要重新编译整个固件。                 |
+| **性能开销** | 有运行时开销（函数指针跳转、指令缓存污染）。     | **零开销**，编译后生成的代码。                                |
+| **灵活性**   | 可以在不重启系统的情况下加载/卸载驱动模块。      | 驱动在编译时就已完全固定。换一颗芯片，需要重新编译整个固件。  |
