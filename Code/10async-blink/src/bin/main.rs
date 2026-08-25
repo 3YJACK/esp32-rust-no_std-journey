@@ -70,7 +70,7 @@ async fn main(spawner: Spawner) -> ! {
 
     esp_alloc::heap_allocator!(#[esp_hal::ram(reclaimed)] size: 73744);
 
-    let led = Output::new(peripherals.GPIO2, Level::Low, OutputConfig::default());
+    let led = Output::new(peripherals.GPIO4, Level::Low, OutputConfig::default());
 
     // 定时器0作为embassy的时间源，软件中断驱动任务调度
     let timg0 = TimerGroup::new(peripherals.TIMG0);
