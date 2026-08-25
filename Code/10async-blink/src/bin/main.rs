@@ -11,6 +11,7 @@ use esp_hal::{
     clock::CpuClock,
     interrupt::software::SoftwareInterruptControl,
     timer::timg::TimerGroup,
+    gpio::{Output, Level, OutputConfig},
 };
 
 use embassy_executor::Spawner;
@@ -22,10 +23,17 @@ use esp_backtrace as _;
 
 extern crate alloc;
 
-
 // This creates a default app-descriptor required by the esp-idf bootloader.
 // For more information see: <https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/app_image_format.html#application-description>
 esp_bootloader_esp_idf::esp_app_desc!();
+
+#[embassy_executor::task]
+async fn blink(mut led: Output<'static>) {
+    loop {
+        led.toggle();
+        Timer::after(Duration::from_millis(1000)).await;
+    }
+}
 
 #[allow(
     clippy::large_stack_frames,
@@ -60,8 +68,9 @@ async fn main(spawner: Spawner) -> ! {
     let _ = peripherals.GPIO36;
     let _ = peripherals.GPIO37;
 
-
     esp_alloc::heap_allocator!(#[esp_hal::ram(reclaimed)] size: 73744);
+
+    let led = Output::new(peripherals.GPIO2, Level::Low, OutputConfig::default());
 
     // 定时器0作为embassy的时间源，软件中断驱动任务调度
     let timg0 = TimerGroup::new(peripherals.TIMG0);
@@ -71,9 +80,7 @@ async fn main(spawner: Spawner) -> ! {
 
     info!("Embassy initialized!");
 
-
-    // TODO: Spawn some tasks
-    let _ = spawner;
+    spawner.spawn(blink(led).expect("Failed to spawn blink task"));
 
     loop {
         info!("Hello world!");
