@@ -1,3 +1,10 @@
+# 学习目标
+
+使用`esp-generate`创建工程（创建时需注意开启`embassy`异步框架）并参考`esp-rs/esp-hal`仓库的`./example/async/multicore`示例，编写代码并实现串口日志输出和LED灯每秒翻转电平的并发运行。
+
+# 完整源码
+
+```rust
 #![no_std]
 #![no_main]
 #![deny(
@@ -81,7 +88,6 @@ async fn main(spawner: Spawner) -> ! {
 
     info!("Embassy initialized!");
 
-    // 创建异步任务blink并将其加入到执行器的调度队列中
     spawner.spawn(blink(led).expect("Failed to spawn blink task"));
 
     loop {
@@ -91,3 +97,37 @@ async fn main(spawner: Spawner) -> ! {
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
 }
+
+```
+
+**引脚连接参照表：**
+
+| 外设   | 对应引脚  |
+| ---- | ----- |
+| LED灯 | GPIO4 |
+
+# 烧录运行
+
+使用下列命令进行编译：
+
+```powershell
+cargo build 
+```
+
+使用下列命令进行烧录运行：
+
+```powershell
+cargo espflash flash --monitor
+```
+
+**预期效果：**
+
+烧录运行程序后，串口日志每秒输出一次'Hello world!"，同时LED灯每秒翻转一次电平，以一秒为周期进行闪烁。两个任务互不阻塞，异步运行。
+
+# 代码讲解
+
+## esp_rtos
+
+示例源码中出现的`esp_rtos`并不是指freertos之类的实时操作系统，而是专门为 `esp-hal` 在异步框架下提供运行时支持的**任务调度器**，是为了支持`embassy`框架在esp平台运行的集成组件，其本身并不提供类似于任务创建这种传统rtos的API。
+
+
