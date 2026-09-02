@@ -91,11 +91,12 @@ async fn main(low_prio_spawner: Spawner){
     info!("Embassy initialized!");
 
     // 创建一个中断执行器，用于处理高优先级任务
+    // StaticCell 用于在静态存储区存放运行时创建的中断执行器实例
     static EXECUTOR: StaticCell<InterruptExecutor<2>> = StaticCell::new();
     let executor = InterruptExecutor::new(sw_interrupt.software_interrupt2);
     let executor = EXECUTOR.init(executor);
 
-    // 
+    // 将高优先级调度器挂载到中断执行器上
     let high_prio_spawner = executor.start(Priority::Priority3);
     
     // 挂载高优先级任务到高优先级调度器
