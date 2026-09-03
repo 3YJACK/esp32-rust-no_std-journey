@@ -90,19 +90,18 @@ async fn main(low_prio_spawner: Spawner){
 
     info!("Embassy initialized!");
 
-    // 创建一个中断执行器，用于处理高优先级任务
-    // StaticCell 用于在静态存储区存放运行时创建的中断执行器实例
+    // 创建一个中断执行器，用于处理高优先级任务，StaticCell 用于静态初始化
     static EXECUTOR: StaticCell<InterruptExecutor<2>> = StaticCell::new();
     let executor = InterruptExecutor::new(sw_interrupt.software_interrupt2);
     let executor = EXECUTOR.init(executor);
 
-    // 将高优先级调度器挂载到中断执行器上
+    // 设置优先级并启动任务调度
     let high_prio_spawner = executor.start(Priority::Priority3);
     
-    // 挂载高优先级任务到高优先级调度器
+    // 挂载高优先级任务到高优先级执行器的调度队列
     high_prio_spawner.spawn(high_prio_task().expect("Failed to spawn high priority task"));
 
-    // 挂载低优先级任务到低优先级调度器
+    // 挂载低优先级任务到低优先级执行器的调度队列
     low_prio_spawner.spawn(low_prio_task().expect("Failed to spawn low priority task"));
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
