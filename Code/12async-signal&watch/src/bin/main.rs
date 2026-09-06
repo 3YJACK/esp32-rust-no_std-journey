@@ -92,7 +92,8 @@ async fn main(spawner: Spawner){
     let led = Output::new(peripherals.GPIO4, Level::Low, OutputConfig::default());
 
     // 创建一个信号量，用于控制LED的开关
-    let ctrl_signal: &'static Signal<CriticalSectionRawMutex, bool> = Signal::new();
+    static LED_CTRL_SIGNAL: StaticCell<Signal<CriticalSectionRawMutex, bool>> = StaticCell::new();
+    let ctrl_signal = LED_CTRL_SIGNAL.init(Signal::new());
 
     spawner.spawn(led_control(led, ctrl_signal).expect("Failed to spawn led_control task"));
 
