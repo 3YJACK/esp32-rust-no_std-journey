@@ -1,3 +1,43 @@
+# 学习目标
+
+使用`esp-generate`创建工程并参考`esp-rs/esp-hal`仓库的`./example/async/embassy_multicore`和示例，编写代码并实现
+
+需先在终端中通过下面命令添加依赖：
+
+```powershell
+cargo add embassy-sync
+```
+
+# 完整源码
+
+```rust
+
+```
+
+**引脚连接参照表：**
+
+| 外设  | 对应引脚 |
+| --- | ---- |
+|     |      |
+
+# 烧录运行
+
+使用下列命令进行编译：
+
+```powershell
+cargo build 
+```
+
+使用下列命令进行烧录运行：
+
+```powershell
+cargo espflash flash --monitor
+```
+
+**预期效果：**
+
+# 代码讲解
+
 ## Signal-信号
 
 `Signal`是用于**一对一传递单个数据**的同步通信方式，进行发送操作时新值会覆盖旧值，适合接收方只关心最新值的状态同步任务。
