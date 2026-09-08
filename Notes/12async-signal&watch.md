@@ -1,6 +1,6 @@
 # 学习目标
 
-使用`esp-generate`创建工程并参考`esp-rs/esp-hal`仓库的`./example/async/embassy_multicore`和示例，编写代码并实现
+使用`esp-generate`创建工程(注意启用embassy异步框架)，并参考`esp-rs/esp-hal`仓库的`./example/async/embassy_multicore`示例和embassy同步通信的官方文档[embassy_sync - Rust](https://docs.rs/embassy-sync/latest/embassy_sync/)，编写代码并实现
 
 需先在终端中通过下面命令添加依赖：
 
@@ -72,5 +72,3 @@ Embassy的`Singal`虽然叫做信号，但是本质上跟freertos的信号量`Se
 | **使用场景**  | 传递传感器读数、状态机状态等“最新状态”。 | 可作为轻量级二值/计数信号量、数据传递等任务同步。            |
 
 ---
-
-[embassy_sync - Rust](https://docs.rs/embassy-sync/latest/embassy_sync/)
