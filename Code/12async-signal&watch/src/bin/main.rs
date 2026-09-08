@@ -141,7 +141,7 @@ async fn main(spawner: Spawner){
     let config = InputConfig::default().with_pull(Pull::Up);
     let button = Input::new(peripherals.GPIO6, config);
 
-    let led1 = Output::new(peripherals.GPIO5, Level::Low, OutputConfig::default());
+    let led1 = Output::new(peripherals.GPIO7, Level::Low, OutputConfig::default());
 
     // 创建一个 watch，用于监控按钮的状态
     // static BUTTON_WATCH: StaticCell<Watch<CriticalSectionRawMutex, bool, WATCH_RCV_NUM>> = StaticCell::new();
