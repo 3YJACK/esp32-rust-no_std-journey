@@ -9,16 +9,16 @@
 
 use esp_hal::{
     clock::CpuClock,
-    interrupt::{software::SoftwareInterruptControl, Priority},
+    interrupt::{software::SoftwareInterruptControl},
     timer::timg::TimerGroup,
-    delay::Delay,
-    gpio::{Output, Level, OutputConfig},
+    gpio::{Output, Level, OutputConfig, Input, InputConfig, Pull},
 };
 
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
-use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
-use esp_rtos::embassy::InterruptExecutor;
+use embassy_sync::{     blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal, watch::{self, Watch},
+};
+
 use static_cell::StaticCell;
 
 use log::info;
@@ -31,6 +31,44 @@ extern crate alloc;
 // For more information see: <https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/app_image_format.html#application-description>
 esp_bootloader_esp_idf::esp_app_desc!();
 
+const WATCH_RCV_NUM: usize = 2;
+
+#[embassy_executor::task]
+async fn button_monitor(
+    button: Input<'static>,
+    watch_send: watch::Sender<'static, CriticalSectionRawMutex, bool, WATCH_RCV_NUM>,
+) {
+    loop {
+        if button.is_low() {
+            watch_send.send(true);
+        }
+        Timer::after(Duration::from_millis(100)).await;
+    }
+}
+
+#[embassy_executor::task]
+async fn rcv0_print(
+    mut watch_rev0: watch::Receiver<'static, CriticalSectionRawMutex, bool, WATCH_RCV_NUM>,
+) {
+    loop {
+        if watch_rev0.changed().await {
+            info!("button pressed!");
+        }
+    }
+}
+
+#[embassy_executor::task]
+async fn rcv1_led(
+    mut watch_rev1: watch::Receiver<'static, CriticalSectionRawMutex, bool, WATCH_RCV_NUM>,
+    mut led1: Output<'static>
+){
+    loop {
+        if watch_rev1.changed().await {
+            led1.toggle();
+        }
+    }
+}
+    
 
 #[embassy_executor::task]
 async fn led_control(
@@ -89,13 +127,34 @@ async fn main(spawner: Spawner){
 
     info!("Embassy initialized!");
 
-    let led = Output::new(peripherals.GPIO4, Level::Low, OutputConfig::default());
+    let led0 = Output::new(peripherals.GPIO4, Level::Low, OutputConfig::default());
 
-    // 创建一个信号量，用于控制LED的开关
+    // 创建一个信号，用于控制LED的开关
     static LED_CTRL_SIGNAL: StaticCell<Signal<CriticalSectionRawMutex, bool>> = StaticCell::new();
     let ctrl_signal = LED_CTRL_SIGNAL.init(Signal::new());
 
-    spawner.spawn(led_control(led, ctrl_signal).expect("Failed to spawn led_control task"));
+    spawner.spawn(led_control(led0, ctrl_signal).expect("Failed to spawn led_control task"));
+
+    let config = InputConfig::default().with_pull(Pull::Up);
+    let button = Input::new(peripherals.GPIO6, config);
+
+    let led1 = Output::new(peripherals.GPIO5, Level::Low, OutputConfig::default());
+
+    // 创建一个 watch，用于监控按钮的状态
+    // static BUTTON_WATCH: StaticCell<Watch<CriticalSectionRawMutex, bool, WATCH_RCV_NUM>> = StaticCell::new();
+    // let button_watch = BUTTON_WATCH.init(Watch::new());
+    static WATCH: Watch<CriticalSectionRawMutex, bool, WATCH_RCV_NUM> = Watch::new();
+
+    // let mut watch_send = button_watch.sender();
+    // let mut watch_rev0 = button_watch.receiver();
+    // let mut watch_rev1 = button_watch.receiver();
+    let  watch_send = WATCH.sender();
+    let  watch_rev0 = WATCH.receiver().expect("Failed to create watch receiver 0");
+    let  watch_rev1 = WATCH.receiver().expect("Failed to create watch receiver 1");
+
+    spawner.spawn(button_monitor(button, watch_send).expect("Failed to spawn button_monitor task"));
+    spawner.spawn(rcv0_print(watch_rev0).expect("Failed to spawn rcv0_print task"));
+    spawner.spawn(rcv1_led(watch_rev1, led1).expect("Failed to spawn rcv1_led task"));
 
     loop {
         // 每隔1秒发送一次信号，控制LED的开关
