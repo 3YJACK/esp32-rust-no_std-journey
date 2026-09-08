@@ -57,11 +57,11 @@ where
 
 在锁的选择上，传入`CriticalSectionRawMutex` 是最安全稳妥、最不容易出错的选择，它会通过屏蔽中断实现来保证操作的原子性，因此适用于任何场景。
 
----
+`Signal`主要使用的方法是`.signal()`和`.wait()`，更多详情可以查阅官方文档了解。
 
 **与FreeRTOS的对比：**
 
-Embassy的`Singal`虽然叫做信号，但是本质上跟freertos的信号量`Semaphore`完全不同，信号的本质是**最新数据缓存，关心的是数据的具体值**，信号量的本质是**资源计数器，关心的是资源的有无而非其具体内容**。在功能上，信号更接近于freertos的任务通知`Task Notifications`。
+Embassy的`Signal`虽然叫做信号，但是本质上跟freertos的信号量`Semaphore`完全不同，信号的本质是**最新数据缓存，关心的是数据的具体值**，信号量的本质是**资源计数器，关心的是资源的有无而非其具体内容**。在功能上，信号更接近于freertos的任务通知`Task Notifications`。
 
 | 特性维度      | **Embassy 信号 Signal** | **FreeRTOS 任务通知 Task Notifications** |
 | --------- | --------------------- | ------------------------------------ |
@@ -71,4 +71,16 @@ Embassy的`Singal`虽然叫做信号，但是本质上跟freertos的信号量`Se
 | **消费者数量** | **单消费者**，专为特定任务设计。    | **单消费者**，通知是直接发送给指定任务。               |
 | **使用场景**  | 传递传感器读数、状态机状态等“最新状态”。 | 可作为轻量级二值/计数信号量、数据传递等任务同步。            |
 
----
+## Watch
+
+`Watch`是升级版的`Signal`，同样是传递单个最新的值，但是`Watch`**支持一对多通信**。定义如下：
+
+```rust
+pub struct Watch<M: RawMutex, T: Clone, const N: usize> 
+```
+
+其中`M`和`T`的含义与`Signal`一致，`N`指的是数据消费者的数量。
+
+```rust
+
+```

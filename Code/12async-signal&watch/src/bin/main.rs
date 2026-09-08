@@ -16,7 +16,10 @@ use esp_hal::{
 
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
-use embassy_sync::{     blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal, watch::{self, Watch},
+use embassy_sync::{
+    blocking_mutex::raw::CriticalSectionRawMutex, 
+    signal::Signal, 
+    watch::{self, Watch},
 };
 
 use static_cell::StaticCell;
