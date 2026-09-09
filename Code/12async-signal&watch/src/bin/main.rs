@@ -16,7 +16,7 @@ use esp_hal::{
 
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
-use embassy_sync::{
+use embassy_sync::{     // 导入emabssy同步通信模块
     blocking_mutex::raw::CriticalSectionRawMutex, 
     signal::Signal, 
     watch::{self, Watch},
@@ -36,7 +36,7 @@ esp_bootloader_esp_idf::esp_app_desc!();
 
 const WATCH_RCV_NUM: usize = 2;
 
-#[embassy_executor::task]
+#[embassy_executor::task]   // 创建按键监控任务，作为watch的发送者，按键按下时发送信号
 async fn button_monitor(
     button: Input<'static>,
     watch_send: watch::Sender<'static, CriticalSectionRawMutex, bool, WATCH_RCV_NUM>,
@@ -49,21 +49,21 @@ async fn button_monitor(
     }
 }
 
-#[embassy_executor::task]
+#[embassy_executor::task]   // 创建watch的接收任务，按键按下时打印信息
 async fn rcv0_print(
     mut watch_rev0: watch::Receiver<'static, CriticalSectionRawMutex, bool, WATCH_RCV_NUM>,
 ) {
     loop {
-        if watch_rev0.changed().await {
+        if watch_rev0.changed().await { 
             info!("button pressed!");
         }
     }
 }
 
-#[embassy_executor::task]
+#[embassy_executor::task]   // 创建watch的接收任务，按键按下时翻转LED电平
 async fn rcv1_led(
-    mut watch_rev1: watch::Receiver<'static, CriticalSectionRawMutex, bool, WATCH_RCV_NUM>,
-    mut led1: Output<'static>
+    mut led1: Output<'static>,
+    mut watch_rev1: watch::Receiver<'static, CriticalSectionRawMutex, bool, WATCH_RCV_NUM>
 ){
     loop {
         if watch_rev1.changed().await {
@@ -73,7 +73,7 @@ async fn rcv1_led(
 }
     
 
-#[embassy_executor::task]
+#[embassy_executor::task]   // 创建signal接收任务，等待信号以控制LED的开关
 async fn led_control(
     mut led: Output<'static>,
     ctrl_signal: &'static Signal<CriticalSectionRawMutex, bool>,
@@ -144,20 +144,15 @@ async fn main(spawner: Spawner){
     let led1 = Output::new(peripherals.GPIO7, Level::Low, OutputConfig::default());
 
     // 创建一个 watch，用于监控按钮的状态
-    // static BUTTON_WATCH: StaticCell<Watch<CriticalSectionRawMutex, bool, WATCH_RCV_NUM>> = StaticCell::new();
-    // let button_watch = BUTTON_WATCH.init(Watch::new());
     static WATCH: Watch<CriticalSectionRawMutex, bool, WATCH_RCV_NUM> = Watch::new();
 
-    // let mut watch_send = button_watch.sender();
-    // let mut watch_rev0 = button_watch.receiver();
-    // let mut watch_rev1 = button_watch.receiver();
     let  watch_send = WATCH.sender();
     let  watch_rev0 = WATCH.receiver().expect("Failed to create watch receiver 0");
     let  watch_rev1 = WATCH.receiver().expect("Failed to create watch receiver 1");
 
     spawner.spawn(button_monitor(button, watch_send).expect("Failed to spawn button_monitor task"));
     spawner.spawn(rcv0_print(watch_rev0).expect("Failed to spawn rcv0_print task"));
-    spawner.spawn(rcv1_led(watch_rev1, led1).expect("Failed to spawn rcv1_led task"));
+    spawner.spawn(rcv1_led(led1, watch_rev1).expect("Failed to spawn rcv1_led task"));
 
     loop {
         // 每隔1秒发送一次信号，控制LED的开关
