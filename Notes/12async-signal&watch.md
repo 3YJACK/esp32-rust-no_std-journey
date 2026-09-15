@@ -226,11 +226,15 @@ where
 
 在锁的选择上，传入`CriticalSectionRawMutex` 是最安全稳妥、最不容易出错的选择，它会通过屏蔽中断实现来保证操作的原子性，因此适用于任何场景。
 
+下面是`Signal`创建和使用的简单示例：
+
 ```rust
 static SIGNAL: Signal<CriticalSectionRawMutex, u32> = Signal::new();
 
-
-Siganl.signal
+// 发出信号并携带数据
+SIGNAL.signal(value:u32)；
+// 等待信号并返回信号携带值
+SIGNAL.wait().await；
 ```
 
 `Signal`主要使用的方法是`.signal()`和`.wait()`，更多详情可以查阅官方文档了解。
@@ -249,7 +253,7 @@ Embassy的`Signal`虽然叫做信号，但是本质上跟freertos的信号量`Se
 
 ## Watch
 
-`Watch`是升级版的`Signal`，同样是传递单个最新的值，但是`Watch`**支持一对多通信**。定义如下：
+简单来说，`Watch`就是升级版的`Signal`，同样是传递单个最新的值，但是`Watch`**支持一对多通信**。定义如下：
 
 ```rust
 pub struct Watch<M: RawMutex, T: Clone, const N: usize> 
@@ -266,3 +270,16 @@ let  watch_send = WATCH.sender();
 let  watch_rev0 = WATCH.receiver().expect("Failed to create watch receiver 0");
 let  watch_rev1 = WATCH.receiver().expect("Failed to create watch receiver 1");
 ```
+
+`Watch`的使用示例如下：
+
+```rust
+// 发送watch并携带数据
+watch_send.send(ture)；
+// 等待watch更新并获取最新值
+watch_rev0.changed().await；
+// 不等待watch更新直接获取当前数值
+watch_rev1.get().await; 
+```
+
+`Watch`主要使用到的方法如实例所示，更多详情可以查阅官方文档了解。
