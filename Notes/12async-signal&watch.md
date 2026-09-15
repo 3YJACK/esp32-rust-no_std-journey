@@ -259,7 +259,7 @@ Embassy的`Signal`虽然叫做信号，但是本质上跟freertos的信号量`Se
 pub struct Watch<M: RawMutex, T: Clone, const N: usize> 
 ```
 
-其中`M`和`T`的含义与`Signal`一致，`N`指的是数据消费者的数量。
+其中`M`和`T`的含义与`Signal`一致，`N`指的是数据接收者的最大创建数量。
 
 `Watch`及其发送方和接收方的创建示例如下：
 
