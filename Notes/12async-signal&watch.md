@@ -231,8 +231,8 @@ where
 ```rust
 static SIGNAL: Signal<CriticalSectionRawMutex, u32> = Signal::new();
 
-// 发出信号并携带数据
-SIGNAL.signal(value:u32)；
+// 发出信号并携带数据(value：u32)
+SIGNAL.signal(value)；
 // 等待信号并返回信号携带值
 SIGNAL.wait().await；
 ```
@@ -275,7 +275,7 @@ let  watch_rev1 = WATCH.receiver().expect("Failed to create watch receiver 1");
 
 ```rust
 // 发送watch并携带数据
-watch_send.send(ture)；
+watch_send.send(true)；
 // 等待watch更新并获取最新值
 watch_rev0.changed().await；
 // 不等待watch更新直接获取当前数值
