@@ -282,4 +282,4 @@ watch_rev0.changed().await；
 watch_rev1.get().await; 
 ```
 
-`Watch`主要使用到的方法如实例所示，更多详情可以查阅官方文档了解。
+`Watch`的主要创建流程和使用方法如上示例所示，更多详情可以查阅官方文档了解。
