@@ -237,7 +237,18 @@ SIGNAL.signal(value)；
 SIGNAL.wait().await；
 ```
 
-`Signal`主要使用的方法是`.signal()`和`.wait()`，更多详情可以查阅官方文档了解。
+其中`.wait()`方法是需要`.await`的异步操作，正如我们前面所说，异步操作是无法使用在中断服务程序的，因此如果是想在中断中进行信号同步，应该使用其同步版本方法`.try_take()`，其返回值是`Option<T>`。
+
+这是一个非阻塞方法，适用于中断这种无法阻塞以及其它不想阻塞的场景。当`.try_take()`取走`Signal`中的数值时，`Signal`的缓存会被清除，再进行`.try_take()`时会直接返回`None`，因此可以搭配`.signaled()`方法来避免取空。
+
+```rust
+if SIGNAL.signaled(){ // 如果Signal信号被触发，数值更新则返回ture
+    // 尝试取走Signal中的值，如果Signal中没有数值，则立即返回None
+    SIGNAL.try_take()；
+}
+```
+
+`Signal`主要使用的方法如前文所示，更多详情可以查阅官方文档了解。
 
 **与FreeRTOS的对比：**
 
@@ -271,7 +282,7 @@ let  watch_rev0 = WATCH.receiver().expect("Failed to create watch receiver 0");
 let  watch_rev1 = WATCH.receiver().expect("Failed to create watch receiver 1");
 ```
 
-`Watch`的使用示例如下：
+`Watch`的使用方法主要如下：
 
 ```rust
 // 发送watch并携带数据
@@ -280,6 +291,10 @@ watch_send.send(true)；
 watch_rev0.changed().await；
 // 不等待watch更新直接获取当前数值
 watch_rev1.get().await; 
+// .changed()的同步非阻塞版本
+watch_rev0.try_changed()；
+// .get()的同步非阻塞版本
+watch_rev1.try_get()；
 ```
 
-`Watch`的主要创建流程和使用方法如上示例所示，更多详情可以查阅官方文档了解。
+关于`Watch`更多详情可以查阅官方文档了解。
