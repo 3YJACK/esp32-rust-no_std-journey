@@ -2,13 +2,13 @@
 
 使用`esp-generate`创建工程(注意启用embassy异步框架)，并参考`esp-rs/esp-hal`仓库的`./example/async/embassy_multicore`示例和embassy同步通信的官方文档[embassy_sync - Rust](https://docs.rs/embassy-sync/latest/embassy_sync/)，编写代码并完成用`Singal`与LED0进行一对一同步和用`Watch`与LED1和串口打印进行一对多同步的通信示例。
 
-需先在终端中通过下面命令添加依赖，才能导入emabssy的同步通信模块：
+# 完整源码
+
+需先在终端中通过下面命令添加对应依赖，才能导入emabssy的同步通信模块：
 
 ```powershell
 cargo add embassy-sync
 ```
-
-# 完整源码
 
 ```rust
 #![no_std]
@@ -242,7 +242,7 @@ SIGNAL.wait().await；
 这是一个非阻塞方法，适用于中断这种无法阻塞以及其它不想阻塞的场景。当`.try_take()`取走`Signal`中的数值时，`Signal`的缓存会被清除，再进行`.try_take()`时会直接返回`None`，因此可以搭配`.signaled()`方法来避免取空。
 
 ```rust
-if SIGNAL.signaled(){ // 如果Signal信号被触发，数值更新则返回ture
+if SIGNAL.signaled(){ // 如果Signal信号被触发，数值更新则返回ture，否则返回false
     // 尝试取走Signal中的值，如果Signal中没有数值，则立即返回None
     SIGNAL.try_take()；
 }
