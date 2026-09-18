@@ -35,7 +35,7 @@ const CHANNEL_CAPACITY: usize = 10;
 
 #[embassy_executor::task]
 async fn print_task(
-    mut channel_receiver: Receiver<'static, CriticalSectionRawMutex, &'static str, CHANNEL_CAPACITY>,
+    channel_receiver: Receiver<'static, CriticalSectionRawMutex, &'static str, CHANNEL_CAPACITY>,
 ) {
     loop {
         let msg = channel_receiver.receive().await;
@@ -94,7 +94,7 @@ async fn main(spawner: Spawner) -> ! {
 
     let timg0 = TimerGroup::new(peripherals.TIMG0);
     let sw_interrupt =
-        esp_hal::interrupt::software::SoftwareInterruptControl::new(peripherals.SW_INTERRUPT);
+    esp_hal::interrupt::software::SoftwareInterruptControl::new(peripherals.SW_INTERRUPT);
     esp_rtos::start(timg0.timer0, sw_interrupt.software_interrupt0);
 
     info!("Embassy initialized!");
