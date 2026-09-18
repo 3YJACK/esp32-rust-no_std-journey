@@ -7,12 +7,18 @@
 )]
 #![deny(clippy::large_stack_frames)]
 
-use esp_hal::clock::CpuClock;
-use esp_hal::timer::timg::TimerGroup;
-
+use esp_hal::{
+    clock::CpuClock,
+    timer::timg::TimerGroup,
+    gpio::{Input, InputConfig, Pull},
+};
 
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
+use embassy_sync::{     // 导入emabssy同步通信模块
+    blocking_mutex::raw::CriticalSectionRawMutex, 
+    channel::{Channel, Receiver, Sender},
+};
 
 use log::info;
 
@@ -24,6 +30,31 @@ extern crate alloc;
 // This creates a default app-descriptor required by the esp-idf bootloader.
 // For more information see: <https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/app_image_format.html#application-description>
 esp_bootloader_esp_idf::esp_app_desc!();
+
+const CHANNEL_CAPACITY: usize = 10;
+
+#[embassy_executor::task]
+async fn print_task(
+    mut channel_receiver: Receiver<'static, CriticalSectionRawMutex, &'static str, CHANNEL_CAPACITY>,
+) {
+    loop {
+        let msg = channel_receiver.receive().await;
+        info!("{}", msg);
+    }
+}
+
+#[embassy_executor::task]
+async fn button_sender(
+    button: Input<'static>,
+    channel_sender: Sender<'static,CriticalSectionRawMutex, &'static str, CHANNEL_CAPACITY>,
+) {
+    loop {
+        if button.is_low() {
+            channel_sender.send("message from sender1").await;
+        }
+        Timer::after(Duration::from_millis(100)).await;
+    }
+}
 
 #[allow(
     clippy::large_stack_frames,
@@ -40,13 +71,13 @@ async fn main(spawner: Spawner) -> ! {
     let peripherals = esp_hal::init(config);
 
     // The following pins are used to bootstrap the chip. They are available
-                    // for use, but check the datasheet of the module for more information on them.
-                    // - GPIO0
-// - GPIO3
-// - GPIO45
-// - GPIO46
-// These GPIO pins are in use by some feature of the module and should not be used.
-                        let _ = peripherals.GPIO27;
+    // for use, but check the datasheet of the module for more information on them.
+    // - GPIO0
+    // - GPIO3
+    // - GPIO45
+    // - GPIO46
+    // These GPIO pins are in use by some feature of the module and should not be used.
+    let _ = peripherals.GPIO27;
     let _ = peripherals.GPIO28;
     let _ = peripherals.GPIO29;
     let _ = peripherals.GPIO30;
@@ -68,13 +99,21 @@ async fn main(spawner: Spawner) -> ! {
 
     info!("Embassy initialized!");
 
+    static CHANNEL: Channel<CriticalSectionRawMutex, &'static str, CHANNEL_CAPACITY> = Channel::new();
+    
+    let channel_sender0 = CHANNEL.sender();
+    let channel_sender1 = CHANNEL.sender();
+    let channel_receiver = CHANNEL.receiver();
 
-    // TODO: Spawn some tasks
-    let _ = spawner;
+    let config = InputConfig::default().with_pull(Pull::Up);
+    let button = Input::new(peripherals.GPIO6, config);
+
+    spawner.spawn(print_task(channel_receiver).expect("Failed to spawn print task"));
+    spawner.spawn(button_sender(button, channel_sender1).expect("Failed to spawn button sender"));
 
     loop {
-        info!("Hello world!");
-        Timer::after(Duration::from_secs(1)).await;
+        channel_sender0.send("message from sender 0").await;
+        Timer::after(Duration::from_millis(2000)).await;
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
