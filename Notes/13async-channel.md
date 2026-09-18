@@ -1,6 +1,6 @@
 ## Channel
 
-embassy异步框架中的`channel`相当于freertos中的`queue`，两者的设计目标和核心机制是高度相似的。其定义如下：
+embassy异步框架中的`channel`相当于freertos中的`queue`，都是用于在异步任务之间传递多组数据的队列，两者的设计目标和核心机制是高度相似的。其定义如下：
 
 ```rust
 pub struct Channel<M, T, const N: usize>
